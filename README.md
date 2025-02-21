@@ -1,24 +1,95 @@
-# aliyun-ds-test
+# AI 中医诊疗助手
 
-## Project setup
-```
+一个基于阿里云百炼的中医智能诊疗系统，本demo选用的是deepseek-v3大模型，可以根据患者信息进行智能分析并给出诊疗建议。
+
+## 功能特点
+
+- 🏥 智能问诊：根据患者基本信息、症状和体征进行智能分析
+- 📋 结构化输入：支持录入患者的完整病历信息
+  - 基本信息（年龄、性别、体重等）
+  - 主诉
+  - 现病史
+  - 既往史
+  - 体征指标（体温、血压、脉搏等）
+  - 中医四诊信息（舌象、脉象等）
+- 🤖 AI 分析：提供全面的诊疗建议
+  - 辅助检查建议
+  - 治则
+  - 辨病辨证依据
+  - 治疗方案
+  - 中医疾病和证候诊断
+- ⚡ 实时响应：支持流式输出，实时查看 AI 分析过程
+- 🎨 优雅界面：现代化的 UI 设计，良好的交互体验
+
+## 快速开始
+
+### 环境要求
+
+- Node.js >= 14
+- npm >= 6
+
+### 安装
+
+```bash
+# 克隆项目
+git clone [项目地址]
+
+# 安装依赖
 npm install
 ```
 
-### Compiles and hot-reloads for development
-```
-npm run serve
+### 配置
+
+在项目根目录创建 `.env` 文件，配置以下环境变量：
+
+```env
+VUE_APP_API_KEY=your_api_key      # 阿里云API密钥
+VUE_APP_APP_ID=your_app_id        # 应用ID
+VUE_APP_PIPELINE_IDS=id1,id2      # 知识库ID，多个用逗号分隔
 ```
 
-### Compiles and minifies for production
-```
+### 运行
+
+```bash
+# 开发环境
+npm run serve
+
+# 生产环境
 npm run build
 ```
 
-### Lints and fixes files
-```
-npm run lint
-```
+## 使用说明
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+1. 填写患者信息
+   - 输入基本信息和体征数据
+   - 详细描述主诉、现病史和既往史
+   - 记录中医四诊信息
+
+2. 生成问诊内容
+   - 点击"生成问诊内容"按钮，系统会整合所有信息
+
+3. 发送分析请求
+   - 检查生成的问诊内容
+   - 点击"发送请求"开始 AI 分析
+
+4. 查看分析结果
+   - 实时查看 AI 的分析过程
+   - 获得结构化的诊疗建议
+   - 查看相关的中医疾病和证候诊断
+
+## 注意事项
+
+- 请确保 API Key 等敏感信息的安全性
+- 建议在生产环境中使用环境变量管理配置信息
+- 输入信息越详细，AI 分析结果越准确
+
+## 技术栈
+
+- Vue.js
+- 阿里云灵积模型 API
+- Server-Sent Events (SSE)
+- CSS3 动画和渐变
+
+## License
+
+[MIT](LICENSE)
