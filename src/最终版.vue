@@ -2,6 +2,7 @@
   <div id="app">
     <div class="container">
       <h1 class="title">AI诊疗调试</h1>
+      
       <div class="config-section" style="display: none;">
         <input 
           v-model="apiKey" 
@@ -178,9 +179,9 @@ export default {
       userInput: '',
       error: null,
       loading: false,
-      apiKey: process.env.VUE_APP_API_KEY,
-      appId: process.env.VUE_APP_APP_ID,
-      pipelineIds: process.env.VUE_APP_PIPELINE_IDS,
+      apiKey: 'sk-f4573b183ccf429783708cbf75d27a02',
+      appId: 'e831197bc1414f4a87acad09e197498d',
+      pipelineIds: ['lr8wnoexvf','k4nja2yhmb'],
       streamResponse: null,
       parsedResult: null,
       patientInfo: {
@@ -188,7 +189,7 @@ export default {
         gender: "男",
         weight: "90",
         mainComplaint: "反复头晕、头痛伴心悸5年，加重1周",
-        presentIllness: `患者5年前无明显诱因出现头晕、头痛，伴有心悸，就诊于当地医院，测血压为160/100 mmHg，诊断为"高血压"。此后间断服用降压药物（具体药物不详），血压控制不佳。1周前因工作压力大，头晕、头痛症状加重，伴有视物模糊，无恶心、呕吐，无肢体活动障碍。自测血压为170/110 mmHg，遂来就诊。`,
+        presentIllness: "患者5年前无明显诱因出现头晕、头痛，伴有心悸，就诊于当地医院，测血压为160/100 mmHg，诊断为“高血压”。此后间断服用降压药物（具体药物不详），血压控制不佳。1周前因工作压力大，头晕、头痛症状加重，伴有视物模糊，无恶心、呕吐，无肢体活动障碍。自测血压为170/110 mmHg，遂来就诊。",
         pastHistory: "患者曾有高血压、糖尿病、高脂血症病史，无药物过敏史",
         temperature: "39",
         bloodPressure: "150/90",
@@ -201,10 +202,6 @@ export default {
         fingerprint: "沉"
       }
     }
-  },
-  mounted() {
-    console.log(process.env);
-    
   },
   methods: {
     parseDiagnosis(diagnosisStr) {

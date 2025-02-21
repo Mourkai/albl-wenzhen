@@ -2,6 +2,7 @@
   <div id="app">
     <div class="container">
       <h1 class="title">AI诊疗调试</h1>
+      
       <div class="config-section" style="display: none;">
         <input 
           v-model="apiKey" 
@@ -35,7 +36,7 @@
 
         <div class="form-group">
           <label class="sub-label">主诉</label>
-          <textarea v-model="patientInfo.mainComplaint" class="form-input" rows="2" placeholder="请详细描述患者的主要症状和不适" style="margin-right: 10px;"></textarea>
+          <textarea v-model="patientInfo.mainComplaint" class="form-input" rows="2" placeholder="请详细描述患者的主要症状和不适"></textarea>
         </div>
 
         <div class="form-group">
@@ -100,56 +101,48 @@
       <div class="chat-container">
         <div class="input-section">
           <div class="message-input" style="min-height: 100px">{{ userInput }}</div>
-          <button 
-            @click="sendRequest" 
-            :disabled="loading || !userInput.trim()" 
-            class="send-button"
-          >
+          <button @click="sendRequest" :disabled="loading" class="send-button">
             <span v-if="!loading">发送请求</span>
             <div v-else class="loading-spinner"></div>
           </button>
         </div>
 
         <div class="loading-message" v-if="loading">
-          <div class="progress-bar">
-            <div class="progress-bar-inner"></div>
+          <div class="dots-loading">
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
-          <span class="loading-text">AI 正在分析患者信息...</span>
+          正在等待模型响应...
         </div>
 
-        <!-- 流式输出显示区域，始终显示原始字符串 -->
-        <div v-if="streamResponse" class="stream-output">
-          <pre>{{ streamResponse }}</pre>
-        </div>
-
-        <!-- 最终渲染结果 -->
-        <div class="response-section" v-if="!loading && parsedResult">
+        <div class="response-section" v-if="streamResponse">
           <h3>诊断结果</h3>
-          <div>
+          <div v-if="typeof streamResponse === 'object'">
             <div class="diagnosis-item">
               <h4>辅助检查建议</h4>
-              <p>{{ parsedResult.auxiliaryExamination }}</p>
+              <p>{{ streamResponse.auxiliaryExamination }}</p>
             </div>
             
             <div class="diagnosis-item">
               <h4>治则</h4>
-              <p>{{ parsedResult.treatmentPrinciple }}</p>
+              <p>{{ streamResponse.treatmentPrinciple }}</p>
             </div>
             
             <div class="diagnosis-item">
               <h4>辨病辨证依据</h4>
-              <p>{{ parsedResult.diagnosisBasis }}</p>
+              <p>{{ streamResponse.diagnosisBasis }}</p>
             </div>
             
             <div class="diagnosis-item">
               <h4>治疗方案</h4>
-              <p>{{ parsedResult.treatmentPlan }}</p>
+              <p>{{ streamResponse.treatmentPlan }}</p>
             </div>
             
             <div class="diagnosis-item">
               <h4>中医诊断</h4>
               <div class="diagnosis-list">
-                <div v-for="(item, index) in parsedResult.tcmDiagnosis" 
+                <div v-for="(item, index) in streamResponse.tcmDiagnosis" 
                      :key="index"
                      class="diagnosis-pair">
                   <div class="diagnosis-text">
@@ -159,6 +152,7 @@
               </div>
             </div>
           </div>
+          <pre v-else>{{ streamResponse }}</pre>
         </div>
 
         <div class="error-message" v-if="error">
@@ -178,18 +172,17 @@ export default {
       userInput: '',
       error: null,
       loading: false,
-      apiKey: process.env.VUE_APP_API_KEY,
-      appId: process.env.VUE_APP_APP_ID,
-      pipelineIds: process.env.VUE_APP_PIPELINE_IDS,
+      apiKey: 'sk-f4573b183ccf429783708cbf75d27a02',
+      appId: 'e831197bc1414f4a87acad09e197498d',
+      pipelineIds: ['lr8wnoexvf','k4nja2yhmb'],
       streamResponse: null,
-      parsedResult: null,
       patientInfo: {
         age: "49",
         gender: "男",
         weight: "90",
-        mainComplaint: "反复头晕、头痛伴心悸5年，加重1周",
-        presentIllness: `患者5年前无明显诱因出现头晕、头痛，伴有心悸，就诊于当地医院，测血压为160/100 mmHg，诊断为"高血压"。此后间断服用降压药物（具体药物不详），血压控制不佳。1周前因工作压力大，头晕、头痛症状加重，伴有视物模糊，无恶心、呕吐，无肢体活动障碍。自测血压为170/110 mmHg，遂来就诊。`,
-        pastHistory: "患者曾有高血压、糖尿病、高脂血症病史，无药物过敏史",
+        mainComplaint: "反复咳嗽咳痰5年，最近一周发热",
+        presentIllness: "患者5年内反复出现咳嗽咳痰，痰中带血，曾被诊断为支气管扩张感染",
+        pastHistory: "患者曾患高血压，糖尿病",
         temperature: "39",
         bloodPressure: "150/90",
         pulse: "77",
@@ -203,8 +196,14 @@ export default {
     }
   },
   mounted() {
-    console.log(process.env);
-    
+            const text = '建议进行妇科超声和性激素六项检查#调理经脉、疏肝理气#患者月经周期紊乱、经量减少，舌质淡红，舌苔厚，脉象沉，符合经脉证表现#中药调理结合针灸治疗，推荐柴胡疏肝散加减#经期延长病-BFY060|经脉证-B05.01,经期66病-BF6060|十二经证-B05.01.03,经期66病-BF6060|十二经证-B05.01.03'
+            // const text = '建议进行妇科超声和性激素六项检查#调理经脉、疏肝理气#患者月经周期紊乱、经量减少，舌质淡红，舌苔厚，脉象沉，符合经脉证表现#中药调理结合针灸治疗，推荐柴胡疏肝散加减#症状名称-症状编码|症候名称-症候编码,症状名称-症状编码|症候名称-症候编码...'
+            const parsedData = this.parseResponse(text)
+        if (parsedData) {
+          this.streamResponse = parsedData
+        } else {
+          this.streamResponse = text
+        }
   },
   methods: {
     parseDiagnosis(diagnosisStr) {
@@ -262,17 +261,16 @@ export default {
         const strBefore = `你是一名专业的坐诊医师，请基于大模型和应用里的知识库数据分析以下患者信息。请严格按照我提供的格式输出：
 一句辅助检查建议#一句治则#一句辨病辨证依据#一句治疗方案#疾病名称-疾病编码|证候名称-证候编码,疾病名称-疾病编码|证候名称-证候编码
 
-请分析以下患者信息：`
-
+请分析以下患者信息：`;
         const strAfter = `
 请记住：
 1. 必须按照示例格式输出，用#分隔每个部分
 2. 每个字段一句话概括
-3. 最后一部分是疾病和证候对，可以返回多对，用逗号分隔
+3. 最后一部分是疾病和证候对，可以返回多对，用逗号 分隔
 4. 每对中疾病和证候用|分隔，名称和编码用-分隔
-5. 疾病和症候内容必须基于知识库数据`
+5. 疾病和症候内容必须基于知识库数据`;
 
-        const strper = strBefore + this.userInput + strAfter
+        const strper = strBefore + this.userInput + strAfter;
         const requestData = {
           input: {
             prompt: strper
@@ -280,19 +278,16 @@ export default {
           parameters: {
             rag_options: {
               pipeline_ids: this.pipelineIds
-            },
-            incremental_output: true // 启用增量输出
+            }
           },
           debug: {}
         }
 
-        // 使用 fetch 发送请求并处理流式响应
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'X-DashScope-SSE': 'enable' // 启用 SSE
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify(requestData)
         })
@@ -302,61 +297,13 @@ export default {
           throw new Error(errorData.message || '请求失败')
         }
 
-        // 创建 SSE 读取器
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        let fullResponse = ''
-        let tempResponse = ''
-
-        // 读取流式响应
-        try {
-          let reading = true
-          while (reading) {
-            const { done, value } = await reader.read()
-            if (done) {
-              reading = false
-              continue
-            }
-
-            // 解码二进制数据
-            const chunk = decoder.decode(value)
-            const lines = chunk.split('\n')
-
-            // 处理每一行数据
-            for (const line of lines) {
-              if (line.trim() === '') continue
-              if (line.startsWith('data:')) {
-                try {
-                  const data = JSON.parse(line.slice(5))
-                  if (data.output && data.output.text) {
-                    tempResponse += data.output.text
-                    // 实时显示流式输出
-                    this.streamResponse = tempResponse
-                  }
-                } catch (e) {
-                  console.warn('解析流式数据失败:', e)
-                }
-              }
-            }
-          }
-        } finally {
-          reader.releaseLock()
-        }
-
-        // 所有数据接收完毕，进行最终处理
-        fullResponse = tempResponse
-        const parsedData = this.parseResponse(fullResponse)
-
-        // 保持流式输出显示原始字符串
-        this.streamResponse = fullResponse
-
-        // 添加一个新的属性用于存储解析后的数据
+        const data = await response.json()
+        const parsedData = this.parseResponse(data.output.text)
         if (parsedData) {
-          this.parsedResult = parsedData
+          this.streamResponse = parsedData
         } else {
-          this.parsedResult = null
+          this.streamResponse = data.output.text
         }
-
       } catch (err) {
         console.error('API 调用错误:', err)
         this.error = '请求失败：' + (err.message || '未知错误')
@@ -385,39 +332,24 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
   min-height: 100vh;
-  /* 使用渐变背景 */
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+  background: #f5f7fa;
   padding: 20px 0;
 }
 
 .container {
-  max-width: 1000px; /* 增加宽度 */
+  max-width: 800px;
   margin: 0 auto;
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px); /* 毛玻璃效果 */
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .title {
   text-align: center;
-  color: #2b5876;
-  font-size: 28px;
-  margin-bottom: 40px;
-  position: relative;
-  /* 添加科技感装饰 */
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 3px;
-    background: linear-gradient(90deg, #2b5876, #4e4376);
-    border-radius: 3px;
-  }
+  color: #409EFF;
+  font-size: 24px;
+  margin-bottom: 30px;
 }
 
 .chat-container {
@@ -447,33 +379,29 @@ export default {
 }
 
 .send-button {
-  background: linear-gradient(45deg, #2b5876, #4e4376);
+  background-color: #409EFF;
   color: white;
   padding: 12px 24px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 16px;
-  transition: all 0.3s;
+  transition: background-color 0.3s;
   margin-top: 10px;
   min-width: 120px;
   min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(43, 88, 118, 0.3);
-  }
-  
-  &:disabled {
-    background: linear-gradient(45deg, #a8b4c0, #b3b0ba);
-    cursor: not-allowed;
-    opacity: 0.7;
-    transform: none;
-    box-shadow: none;
-  }
+}
+
+.send-button:hover {
+  background-color: #66b1ff;
+}
+
+.send-button:disabled {
+  background-color: #a0cfff;
+  cursor: not-allowed;
 }
 
 .response-section {
@@ -521,46 +449,34 @@ export default {
 
 .loading-message {
   text-align: center;
-  margin: 30px 0;
+  color: #909399;
+  margin: 20px 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 15px;
+  justify-content: center;
+  gap: 10px;
 }
 
-.loading-text {
-  color: #2b5876;
-  font-size: 15px;
-  font-weight: 500;
+.dots-loading {
+  display: flex;
+  gap: 4px;
 }
 
-.progress-bar {
-  width: 300px;
-  height: 4px;
-  background: rgba(43, 88, 118, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
+.dots-loading span {
+  width: 6px;
+  height: 6px;
+  background-color: #409EFF;
+  border-radius: 50%;
+  display: inline-block;
+  animation: dots 1.4s infinite ease-in-out both;
 }
 
-.progress-bar-inner {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 30%;
-  background: linear-gradient(90deg, #2b5876, #4e4376);
-  border-radius: 2px;
-  animation: progress 1.5s ease-in-out infinite;
-}
+.dots-loading span:nth-child(1) { animation-delay: -0.32s; }
+.dots-loading span:nth-child(2) { animation-delay: -0.16s; }
 
-@keyframes progress {
-  0% {
-    left: -30%;
-  }
-  100% {
-    left: 100%;
-  }
+@keyframes dots {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
 }
 
 .api-key-input {
@@ -591,11 +507,10 @@ export default {
 }
 
 .medical-form {
-  background: linear-gradient(to right, #ffffff, #f8f9fa);
-  padding: 25px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  border: 1px solid rgba(65, 184, 255, 0.1);
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
 .form-group {
@@ -640,32 +555,23 @@ export default {
   width: 120px;
 }
 
-/* 添加新的宽度类 */
-.form-input.full {
-  width: 100%;
-  max-width: 800px;
-}
-
 textarea.form-input {
-  width: 98%;
+  width: 100%;
   resize: vertical;
 }
 
 .form-button {
-  background: linear-gradient(45deg, #2b5876, #4e4376);
+  background-color: #67c23a;
   color: white;
-  padding: 12px 30px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.3s;
-  font-weight: 500;
-  box-shadow: 0 4px 15px rgba(43, 88, 118, 0.2);
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(43, 88, 118, 0.3);
-  }
+  transition: background-color 0.3s;
+}
+
+.form-button:hover {
+  background-color: #85ce61;
 }
 
 .form-field {
@@ -700,36 +606,17 @@ textarea.form-input {
 
 .diagnosis-item {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  margin: 8px 0;
-  border: 1px solid rgba(65, 184, 255, 0.1);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
-  }
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin: 5px 0;
 }
 
 .diagnosis-item h4 {
-  color: #2b5876;
-  margin: 0 0 15px 0;
-  font-size: 18px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  
-  &:before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 18px;
-    background: linear-gradient(to bottom, #2b5876, #4e4376);
-    margin-right: 10px;
-    border-radius: 2px;
-  }
+  color: #409EFF;
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .diagnosis-item p {
@@ -745,16 +632,10 @@ textarea.form-input {
 }
 
 .diagnosis-pair {
-  padding: 15px;
-  background: linear-gradient(to right, #f8f9fa, #ffffff);
-  border-radius: 8px;
-  border-left: 4px solid #2b5876;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: linear-gradient(to right, #f1f4f7, #ffffff);
-    border-left-color: #4e4376;
-  }
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #409EFF;
 }
 
 .diagnosis-text {
@@ -770,37 +651,5 @@ textarea.form-input {
 .syndrome-separator {
   margin: 0 4px;
   color: #909399;
-}
-
-/* 添加动画效果 */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.diagnosis-item {
-  animation: fadeIn 0.5s ease forwards;
-}
-
-.stream-output {
-  margin: 20px 0;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  border-left: 4px solid #2b5876;
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  line-height: 1.6;
-  overflow-x: hidden;  /* 防止水平溢出 */
-  animation: fadeIn 0.3s ease;
-}
-
-.stream-output pre {
-  margin: 0;
-  font-family: inherit;
-  font-size: 15px;
-  white-space: pre-wrap;  /* 允许文本换行 */
-  word-break: break-all;  /* 在任意字符间换行 */
-  overflow-wrap: break-word;  /* 长单词换行 */
-  max-width: 100%;  /* 限制最大宽度 */
 }
 </style>

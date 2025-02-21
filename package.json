@@ -1,5 +1,5 @@
 {
-  "name": "aliyun-ds-test",
+  "name": "medical-diagnosis",
   "version": "0.1.0",
   "private": true,
   "scripts": {
