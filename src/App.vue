@@ -117,45 +117,95 @@
           <span class="loading-text">AI 正在分析患者信息...</span>
         </div>
 
-        <!-- 流式输出显示区域，始终显示原始字符串 -->
-        <div v-if="streamResponse" class="stream-output">
-          <pre>{{ streamResponse }}</pre>
-        </div>
+        <!-- 响应区域，分为话术和结构化数据 -->
+        <div v-if="streamResponse" class="response-container">
+          <!-- 医患交流话术部分 -->
+          <div class="doctor-chat">
+            <h3>医生话术</h3>
+            <div class="chat-bubble">
+              {{ streamResponse.split('{')[0].replace('医生跟患者交流话术：', '').trim() }}
+            </div>
+          </div>
 
-        <!-- 最终渲染结果 -->
-        <div class="response-section" v-if="!loading && parsedResult">
-          <h3>诊断结果</h3>
-          <div>
-            <div class="diagnosis-item">
-              <h4>辅助检查建议</h4>
-              <p>{{ parsedResult.auxiliaryExamination }}</p>
+          <!-- 结构化数据展示 -->
+          <div v-if="partialResult" class="patient-data">
+            <h3>患者信息</h3>
+            
+            <div class="data-group">
+              <div class="data-item" v-if="partialResult.info">
+                <span class="data-label">基本信息:</span>
+                <span class="data-value">{{ partialResult.info }}</span>
+              </div>
+              
+              <div class="data-item" v-if="partialResult.presentIllness">
+                <span class="data-label">现病史:</span>
+                <span class="data-value">{{ partialResult.presentIllness }}</span>
+              </div>
+              
+              <div class="data-item" v-if="partialResult.pastHistory">
+                <span class="data-label">既往史:</span>
+                <span class="data-value">{{ partialResult.pastHistory }}</span>
+              </div>
             </div>
             
-            <div class="diagnosis-item">
-              <h4>治则</h4>
-              <p>{{ parsedResult.treatmentPrinciple }}</p>
+            <div class="data-group">
+              <div class="data-item small" v-if="partialResult.temperature">
+                <span class="data-label">体温:</span>
+                <span class="data-value">{{ partialResult.temperature }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.bloodPressure">
+                <span class="data-label">血压:</span>
+                <span class="data-value">{{ partialResult.bloodPressure }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.pulse">
+                <span class="data-label">脉搏:</span>
+                <span class="data-value">{{ partialResult.pulse }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.breathing">
+                <span class="data-label">呼吸:</span>
+                <span class="data-value">{{ partialResult.breathing }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.weight">
+                <span class="data-label">体重:</span>
+                <span class="data-value">{{ partialResult.weight }}</span>
+              </div>
             </div>
             
-            <div class="diagnosis-item">
-              <h4>辨病辨证依据</h4>
-              <p>{{ parsedResult.diagnosisBasis }}</p>
+            <div class="data-group">
+              <div class="data-item" v-if="partialResult.diseaseAndSyndrome">
+                <span class="data-label">疾病与证候:</span>
+                <span class="data-value">{{ partialResult.diseaseAndSyndrome }}</span>
+              </div>
             </div>
             
-            <div class="diagnosis-item">
-              <h4>治疗方案</h4>
-              <p>{{ parsedResult.treatmentPlan }}</p>
-            </div>
-            
-            <div class="diagnosis-item">
-              <h4>中医诊断</h4>
-              <div class="diagnosis-list">
-                <div v-for="(item, index) in parsedResult.tcmDiagnosis" 
-                     :key="index"
-                     class="diagnosis-pair">
-                  <div class="diagnosis-text">
-                    {{ item.disease }}：{{ item.syndrome }}
-                  </div>
-                </div>
+            <div class="data-group tcm-signs">
+              <div class="data-item small" v-if="partialResult.tongue">
+                <span class="data-label">舌质:</span>
+                <span class="data-value">{{ partialResult.tongue }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.coating">
+                <span class="data-label">舌苔:</span>
+                <span class="data-value">{{ partialResult.coating }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.tongueShape">
+                <span class="data-label">舌形:</span>
+                <span class="data-value">{{ partialResult.tongueShape }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.pulseType">
+                <span class="data-label">脉象:</span>
+                <span class="data-value">{{ partialResult.pulseType }}</span>
+              </div>
+              
+              <div class="data-item small" v-if="partialResult.fingerprint">
+                <span class="data-label">指纹:</span>
+                <span class="data-value">{{ partialResult.fingerprint }}</span>
               </div>
             </div>
           </div>
@@ -178,11 +228,12 @@ export default {
       userInput: '',
       error: null,
       loading: false,
-      apiKey: process.env.VUE_APP_API_KEY,
-      appId: process.env.VUE_APP_APP_ID,
-      pipelineIds: process.env.VUE_APP_PIPELINE_IDS,
+      apiKey: "sk-04375e566a794b4f80ca856e88fbe916",
+      appId: "bc5d226e61334a3783e97741eafdd100",
       streamResponse: null,
       parsedResult: null,
+      partialResult: null,
+      chatContent: null,
       patientInfo: {
         age: "49",
         gender: "男",
@@ -258,28 +309,34 @@ export default {
 
       try {
         const url = `https://dashscope.aliyuncs.com/api/v1/apps/${this.appId}/completion`
-        const strBefore = `你是一名专业的坐诊医师，请基于大模型和应用里的知识库数据分析以下患者信息。请严格按照我提供的格式输出：
-一句辅助检查建议#一句治则#一句辨病辨证依据#一句治疗方案#疾病名称-疾病编码|证候名称-证候编码,疾病名称-疾病编码|证候名称-证候编码
-
+        const strBefore = `你是一名专业的坐诊医师，请基于大模型和应用里的知识库数据分析以下患者信息。请严格按照以下的格式输出：
+        医生跟患者交流话术：
+        {内容}
+        {
+          "info": "患者信息",
+          "presentIllness": "现病史",
+          "pastHistory": "既往史",
+          "temperature": "体温",
+          "bloodPressure": "血压",
+          "pulse": "脉搏",
+          "breathing": "呼吸次数",
+          "weight": "体重",
+          "tongue": "舌质",
+          "coating": "舌苔",
+          "tongueShape": "舌形",
+          "pulseType": "脉象",
+          "fingerprint": "指纹",
+          "diseaseAndSyndrome": "疾病和证候对"
+        }
 请分析以下患者信息：`
 
-        const strAfter = `
-请记住：
-1. 必须按照示例格式输出，用#分隔每个部分
-2. 每个字段一句话概括
-3. 最后一部分是疾病和证候对，可以返回多对，用逗号分隔
-4. 每对中疾病和证候用|分隔，名称和编码用-分隔
-5. 疾病和症候内容必须基于知识库数据`
 
-        const strper = strBefore + this.userInput + strAfter
+        const strper = strBefore + this.userInput
         const requestData = {
           input: {
             prompt: strper
           },
           parameters: {
-            rag_options: {
-              pipeline_ids: this.pipelineIds
-            },
             incremental_output: true // 启用增量输出
           },
           debug: {}
@@ -304,9 +361,8 @@ export default {
         // 创建 SSE 读取器
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
-        let fullResponse = ''
-        let tempResponse = ''
-
+        let fullText = ''
+        
         // 读取流式响应
         try {
           let reading = true
@@ -328,9 +384,20 @@ export default {
                 try {
                   const data = JSON.parse(line.slice(5))
                   if (data.output && data.output.text) {
-                    tempResponse += data.output.text
-                    // 实时显示流式输出
-                    this.streamResponse = tempResponse
+                    // 累加文本内容
+                    fullText += data.output.text
+                    this.streamResponse = fullText
+                    
+                    // 尝试从响应中提取JSON部分
+                    try {
+                      // 基于当前累积的文本提取并逐步构建JSON对象
+                      const jsonObject = this.extractPartialJson(fullText)
+                      if (jsonObject && Object.keys(jsonObject).length > 0) {
+                        this.partialResult = jsonObject
+                      }
+                    } catch (extractError) {
+                      console.warn('提取JSON失败:', extractError)
+                    }
                   }
                 } catch (e) {
                   console.warn('解析流式数据失败:', e)
@@ -343,11 +410,10 @@ export default {
         }
 
         // 所有数据接收完毕，进行最终处理
-        fullResponse = tempResponse
-        const parsedData = this.parseResponse(fullResponse)
+        const parsedData = this.parseResponse(fullText)
 
         // 保持流式输出显示原始字符串
-        this.streamResponse = fullResponse
+        this.streamResponse = fullText
 
         // 添加一个新的属性用于存储解析后的数据
         if (parsedData) {
@@ -372,6 +438,55 @@ export default {
 舌质${info.tongue}，舌苔${info.coating}，舌形${info.tongueShape}，
 脉象${info.pulseType}，指纹${info.fingerprint}`
       this.userInput = prompt
+    },
+    extractPartialJson(text) {
+      // 查找文本中的JSON开始位置
+      const jsonStartIndex = text.indexOf('{', text.indexOf('医生跟患者交流话术：'))
+      if (jsonStartIndex === -1) return null
+      
+      // 提取从该位置开始的所有文本
+      const jsonPart = text.substring(jsonStartIndex)
+      
+      // 创建一个结果对象
+      const result = {}
+      
+      // 定义可能的所有字段
+      const fields = [
+        'info', 'presentIllness', 'pastHistory', 
+        'temperature', 'bloodPressure', 'pulse', 
+        'breathing', 'weight', 'tongue', 
+        'coating', 'tongueShape', 'pulseType', 
+        'fingerprint', 'diseaseAndSyndrome'
+      ]
+      
+      // 对每个字段尝试提取值，即使是部分值
+      for (const field of fields) {
+        try {
+          // 查找字段的开始位置
+          const fieldPattern = `"${field}"\\s*:\\s*"`
+          const fieldStartMatch = jsonPart.match(new RegExp(fieldPattern))
+          
+          if (fieldStartMatch) {
+            const fieldStartPos = fieldStartMatch.index + fieldStartMatch[0].length
+            // 提取从字段开始到下一个引号或JSON结束的所有内容
+            let endPos = jsonPart.indexOf('"', fieldStartPos)
+            // 如果没找到结束引号，就用目前获取到的所有文本
+            if (endPos === -1) {
+              endPos = jsonPart.length
+            }
+            
+            // 获取字段值，即使它可能不完整
+            const fieldValue = jsonPart.substring(fieldStartPos, endPos)
+            if (fieldValue) {
+              result[field] = fieldValue
+            }
+          }
+        } catch (e) {
+          console.warn(`提取字段 ${field} 失败:`, e)
+        }
+      }
+      
+      return result
     }
   }
 }
@@ -801,5 +916,96 @@ textarea.form-input {
   word-break: break-all;  /* 在任意字符间换行 */
   overflow-wrap: break-word;  /* 长单词换行 */
   max-width: 100%;  /* 限制最大宽度 */
+}
+
+/* 响应区域，分为话术和结构化数据 */
+.response-container {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 医生话术 */
+.doctor-chat {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border-left: 4px solid #2b5876;
+}
+
+.doctor-chat h3 {
+  margin-top: 0;
+  color: #2b5876;
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.chat-bubble {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+}
+
+/* 患者信息 */
+.patient-data {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border-left: 4px solid #4e4376;
+}
+
+.patient-data h3 {
+  margin-top: 0;
+  color: #4e4376;
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.data-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #e8e8e8;
+}
+
+.data-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.data-item {
+  background: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.data-item.small {
+  min-width: 100px;
+}
+
+.data-label {
+  font-size: 12px;
+  color: #606266;
+  margin-bottom: 4px;
+}
+
+.data-value {
+  font-size: 14px;
+  color: #303133;
+}
+
+.tcm-signs {
+  background: rgba(78, 67, 118, 0.05);
+  padding: 10px;
+  border-radius: 8px;
 }
 </style>
